@@ -22,8 +22,10 @@ namespace SharedDesksBooking.Controllers
         {
             var desks = await _context.Desks.ToListAsync();
 
-            var todayReservations = await _context.Reservations
-                .Where(r => r.ReservedDate.Date == DateTime.Today.Date)
+            var today = DateTime.Today;
+
+            var activeReservations = await _context.Reservations
+                .Where(r => today >= r.StartDate && today <= r.EndDate)
                 .ToListAsync();
 
             var response = desks.Select(d => new
@@ -32,7 +34,7 @@ namespace SharedDesksBooking.Controllers
                 Number = d.Number,
                 IsUnderMaintenance = d.IsUnderMaintenance,
 
-                Reservation = todayReservations.FirstOrDefault(r => r.DeskId == d.Id)
+                Reservation = activeReservations.FirstOrDefault(r => r.DeskId == d.Id)
             });
 
             return Ok(response);

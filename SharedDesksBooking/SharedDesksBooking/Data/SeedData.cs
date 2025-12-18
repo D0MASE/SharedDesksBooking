@@ -21,7 +21,8 @@ namespace SharedDesksBooking.Data
                 DeskId = 1,
                 FirstName = "Dominykas",
                 LastName = "Asevicius",
-                ReservedDate = DateTime.Today
+                StartDate = DateTime.Today.AddDays(-1),
+                EndDate = DateTime.Today.AddDays(2)
             });
 
             context.SaveChanges();
