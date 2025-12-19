@@ -1,22 +1,23 @@
-.desk-grid {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  padding: 20px;
+
+.container {
+  padding-bottom: 50px;
 }
 
-.desk-item {
-  width: 100px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
+.card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  cursor: default;
 }
 
-.green { background-color: #28a745; }
-.red { background-color: #dc3545; }
-.gray { background-color: #6c757d; }
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.date-picker-section {
+  max-width: 400px;
+  margin: 0 auto;
+}
