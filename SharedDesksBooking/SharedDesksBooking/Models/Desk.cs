@@ -6,6 +6,6 @@
         public string Number { get; set; }
         public bool IsUnderMaintenance { get; set; }
 
-        public Reservation? Reservation { get; set; }
+        public ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
     }
 }

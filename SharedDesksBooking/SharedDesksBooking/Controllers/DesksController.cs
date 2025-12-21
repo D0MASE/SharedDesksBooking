@@ -34,7 +34,16 @@ namespace SharedDesksBooking.Controllers
                 Number = d.Number,
                 IsUnderMaintenance = d.IsUnderMaintenance,
 
-                Reservation = activeReservations.FirstOrDefault(r => r.DeskId == d.Id)
+                Reservation = activeReservations
+                .Where(r => r.DeskId == d.Id)
+                .Select(r => new {
+                    r.Id,
+                    r.FirstName,
+                    r.LastName,
+                    r.StartDate,
+                    r.EndDate
+                })
+                .FirstOrDefault()
             });
 
             return Ok(response);
