@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SharedDesksBooking.Data;
+using SharedDesksBooking.Models;
 
 namespace SharedDesksBooking.Controllers
 {
@@ -27,28 +28,31 @@ namespace SharedDesksBooking.Controllers
         public async Task<IActionResult> GetUserProfile([FromQuery] string firstName, [FromQuery] string lastName)
         {
             // Validation
-            if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName)) return BadRequest("First and last names are required");
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+                return BadRequest("First and last names are required.");
 
             //Fetch all reservations for the specific user
-            var userReservation = await (from res in _context.Reservations
-                                 join desk in _context.Desks on res.DeskId equals desk.Id
-                                 where res.FirstName.ToLower() == firstName.ToLower() &&
-                                       res.LastName.ToLower() == lastName.ToLower()
-                                 select new
-                                 {
-                                     res.Id,
-                                     res.StartDate,
-                                     res.EndDate,
-                                     res.DeskId,
-                                     Number = desk.Number
-                                 })
-                         .OrderByDescending(r => r.StartDate)
-                         .ToListAsync();
+            var userReservation = await _context.Reservations
+                .Where(r => r.FirstName.ToLower() == firstName.ToLower() &&
+                     r.LastName.ToLower() == lastName.ToLower())
+                .Join(_context.Desks,
+                    res => res.DeskId,
+                    desk => desk.Id,
+                    (res, desk) => new UserReservationDto // Mapping directly to DTO
+                    {
+                         Id = res.Id,
+                         StartDate = res.StartDate,
+                         EndDate = res.EndDate,
+                         DeskId = res.DeskId,
+                         Number = desk.Number
+                     })
+         .OrderByDescending(r => r.StartDate)
+         .ToListAsync();
 
             var today = DateTime.Today;
 
             // Seperate reservations into current/future and past
-            var response = new
+            var response = new UserProfileDto
             {
                 FirstName = firstName,
                 LastName = lastName,
