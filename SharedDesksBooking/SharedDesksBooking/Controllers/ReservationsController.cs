@@ -17,16 +17,26 @@ namespace SharedDesksBooking.Controllers
             _context = context;
         }
 
-        //POST: api/reservations
+        /// <summary>
+        /// Creates a new reservation for a specific desk and time period.
+        /// </summary>
+        /// <param name="reservation">The reservation details.</param>
+        /// <returns>The created reservation object or an error message.</returns>
         [HttpPost]
         public async Task<IActionResult> CreateReservation([FromBody] Reservation reservation)
         {
-            // Basic validation: check if the desk exists and is not under maintenance
+            // Basic validation
+            if (reservation.StartDate.Date < DateTime.Today)
+                return BadRequest("Cannot book in the past.");
+
+            if (reservation.EndDate < reservation.StartDate)
+                return BadRequest("End date must be after start date.");
             var desk = await _context.Desks.FindAsync(reservation.DeskId);
-            if (desk == null || desk.IsUnderMaintenance)
-            {
-                return BadRequest("Desk is not available for reservation.");
-            }
+            if (desk == null) return NotFound("Desk not found.");
+
+            if (desk.IsUnderMaintenance)
+                return BadRequest("Desk is under maintenance.");
+
             // Logic to check if the desk is already reserved for the chosen period
             var isOccupied = await _context.Reservations.AnyAsync(r =>
                 r.DeskId == reservation.DeskId &&
@@ -41,20 +51,25 @@ namespace SharedDesksBooking.Controllers
             return Ok(reservation);
 
         }
-
-        //DELETE: api/reservations/{id}
+        /// <summary>
+        /// Cancels either a single day or the entire range of a reservation.
+        /// </summary>
+        /// <param name="id">The unique ID of the reservation.</param>
+        /// <param name="onlyToday">If true, only the specified date is removed (splitting the reservation if needed).</param>
+        /// <param name="date">The specific date to cancel when onlyToday is true.</param>
+        /// <returns>Success or error status.</returns>
         [HttpDelete("{id}")]
-        // Handles cancelling for one day or the whole rang
-        public IActionResult CacelReservation(int id, [FromQuery] bool onlyToday, [FromQuery] DateTime date)
+        public async Task<IActionResult> CancelReservation(int id, [FromQuery] bool onlyToday, [FromQuery] DateTime date)
         {
-            var res = _context.Reservations.FirstOrDefault(r => r.Id == id);
-
+            var res = await _context.Reservations.FirstOrDefaultAsync(r => r.Id == id);
             if (res == null) return NotFound("Reservation not found");
 
             var targetDate = date.Date;
 
             if (onlyToday)
             {
+                if (targetDate < res.StartDate.Date || targetDate > res.EndDate.Date)
+                    return BadRequest("Selected date is not within the reservation period.");
                 // Logic to split or adjust the reservation for a specific day
                 if (res.StartDate.Date == res.EndDate.Date)
                 {
