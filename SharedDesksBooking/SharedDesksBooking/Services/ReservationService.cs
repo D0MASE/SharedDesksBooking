@@ -11,18 +11,14 @@ namespace SharedDesksBooking.Services
 
         public async Task<(bool Success, string Message)> CreateReservationAsync(CreateReservationRequest request)
         {
-            // Basic validation
-            if (request.StartDate.Date < DateTime.Today)
-                return (false, "Cannot book in the past.");
-
-            if (request.EndDate < request.StartDate)
-                return (false, "End date must be after start date.");
             var desk = await _context.Desks.FindAsync(request.DeskId);
-            if (desk == null) return (false, "Desk not found.");
 
+            if (desk == null)
+                return (false, "Stalas neegzistuoja.");
+
+            // 2. Patikriname, ar stalas nėra remontuojamas
             if (desk.IsUnderMaintenance)
-                return (false, "Desk is under maintenance.");
-
+                return (false, "Šis stalas šiuo metu remontuojamas, rezervacija negalima.");
             // Logic to check if the desk is already reserved for the chosen period
             var isOccupied = await _context.Reservations.AnyAsync(r =>
                 r.DeskId == request.DeskId &&
