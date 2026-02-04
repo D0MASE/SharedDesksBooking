@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SharedDesksBooking.Data;
-using SharedDesksBooking.Models;
+using SharedDesksBooking.Services;
 
 namespace SharedDesksBooking.Controllers
 {
@@ -9,50 +7,24 @@ namespace SharedDesksBooking.Controllers
     [ApiController]
     public class DesksController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IDeskService _deskService;
 
-        public DesksController(AppDbContext context)
+        // Naudojame Dependency Injection per konstruktorių
+        public DesksController(IDeskService deskService)
         {
-            _context = context;
+            _deskService = deskService;
         }
 
-        /// <summary>
-        /// Fetches all desks and their availability status for a specific date.
-        /// </summary>
-        /// <param name="date">The date to check availability for. Defaults to today.</param>
-        /// <returns>A list of desks with their maintenance status and active reservation details.</returns>
         [HttpGet]
         public async Task<IActionResult> GetDesks([FromQuery] DateTime? date)
         {
+            // Jei data nepateikta, naudojame šiandienos datą
+            var targetDate = date ?? DateTime.Today;
 
-            var targetDate = (date ?? DateTime.Today).Date;
+            // Visa logika perduodama servisui
+            var result = await _deskService.GetDesksWithAvailabilityAsync(targetDate);
 
-            var desks = await _context.Desks.ToListAsync();
-
-            var activeReservations = await _context.Reservations
-                .Where(r => targetDate >= r.StartDate.Date && targetDate <= r.EndDate.Date)
-                .ToListAsync();
-
-            var response = desks.Select(d => new DeskResponseDto
-            {
-                Id = d.Id,
-                Number = d.Number,
-                IsUnderMaintenance = d.IsUnderMaintenance,
-
-                Reservation = activeReservations
-                .Where(r => r.DeskId == d.Id)
-                .Select(r => new ReservationDto
-                {
-                    Id = r.Id,
-                    FirstName = r.FirstName,
-                    LastName = r.LastName,
-                    StartDate = r.StartDate,
-                    EndDate = r.EndDate
-                })
-                .FirstOrDefault()
-            });
-
-            return Ok(response);
+            return Ok(result);
         }
     }
 }

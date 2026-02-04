@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SharedDesksBooking.Data;
+using SharedDesksBooking.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,11 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options => 
     options.UseInMemoryDatabase("DesksDb"));
+
+// --- DEPENDENCY INJECTION ---
+builder.Services.AddScoped<IDeskService, DeskService>();
+builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 builder.Services.AddCors(options =>
 {
