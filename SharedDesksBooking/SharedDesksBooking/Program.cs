@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SharedDesksBooking.Constants;
 using SharedDesksBooking.Data;
 using SharedDesksBooking.Services;
 
@@ -13,7 +14,7 @@ builder.Services.AddSwaggerGen();
 
 
 builder.Services.AddDbContext<AppDbContext>(options => 
-    options.UseInMemoryDatabase("DesksDb"));
+    options.UseInMemoryDatabase(AppConstants.DatabaseName));
 
 // --- DEPENDENCY INJECTION ---
 builder.Services.AddScoped<IDeskService, DeskService>();
@@ -22,7 +23,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReact", policy =>
+    options.AddPolicy(AppConstants.CorsPolicyName, policy =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
@@ -34,7 +35,26 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseCors("AllowReact");
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+else
+{
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { Error = "Serverio klaida. Bandykite vėliau." });
+        });
+    });
+}
+
+app.UseCors(AppConstants.CorsPolicyName);
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

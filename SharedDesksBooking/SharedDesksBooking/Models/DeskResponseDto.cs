@@ -5,10 +5,10 @@
     /// </summary>
     public class DeskResponseDto
     {
-        public int Id { get; set; }
-        public string Number { get; set; } = string.Empty;
-        public bool IsUnderMaintenance { get; set; }
-        public ReservationDto? Reservation { get; set; }
+        public int Id { get; init; } // 'init' reiškia, kad ID negalima keisti po sukūrimo
+        public required string Number { get; init; }
+        public bool IsUnderMaintenance { get; init; }
+        public ReservationDto? Reservation { get; init; }
     }
 
     /// <summary>
@@ -16,10 +16,10 @@
     /// </summary>
     public class ReservationDto
     {
-        public int Id { get; set; }
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public int Id { get; init; }
+        public required string FirstName { get; init; }
+        public required string LastName { get; init; }
+        public DateTime StartDate { get; init; }
+        public DateTime EndDate { get; init; }
     }
 }

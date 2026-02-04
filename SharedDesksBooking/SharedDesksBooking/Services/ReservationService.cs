@@ -9,15 +9,15 @@ namespace SharedDesksBooking.Services
         private readonly AppDbContext _context;
         public ReservationService(AppDbContext context) { _context = context; }
 
-        public async Task<(bool Success, string Message)> CreateReservationAsync(Reservation reservation)
+        public async Task<(bool Success, string Message)> CreateReservationAsync(CreateReservationRequest request)
         {
             // Basic validation
-            if (reservation.StartDate.Date < DateTime.Today)
+            if (request.StartDate.Date < DateTime.Today)
                 return (false, "Cannot book in the past.");
 
-            if (reservation.EndDate < reservation.StartDate)
+            if (request.EndDate < request.StartDate)
                 return (false, "End date must be after start date.");
-            var desk = await _context.Desks.FindAsync(reservation.DeskId);
+            var desk = await _context.Desks.FindAsync(request.DeskId);
             if (desk == null) return (false, "Desk not found.");
 
             if (desk.IsUnderMaintenance)
@@ -25,12 +25,22 @@ namespace SharedDesksBooking.Services
 
             // Logic to check if the desk is already reserved for the chosen period
             var isOccupied = await _context.Reservations.AnyAsync(r =>
-                r.DeskId == reservation.DeskId &&
-                reservation.StartDate.Date <= r.EndDate.Date &&
-                reservation.EndDate.Date >= r.StartDate.Date
+                r.DeskId == request.DeskId &&
+                request.StartDate.Date <= r.EndDate.Date &&
+                request.EndDate.Date >= r.StartDate.Date
             );
 
             if (isOccupied) return (false, "Desk is already reserved for these dates.");
+
+            // MAPPING: Iš DTO sukuriame tikrą Reservation objektą
+            var reservation = new Reservation
+            {
+                DeskId = request.DeskId,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate
+            };
 
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
@@ -47,7 +57,7 @@ namespace SharedDesksBooking.Services
             if (onlyToday)
             {
                 if (targetDate < res.StartDate.Date || targetDate > res.EndDate.Date)
-                    return (false, "Selected date is not within the reservation period.");
+                    return (false, "Selected date is not within the request period.");
 
                 if (res.StartDate.Date == res.EndDate.Date)
                 {

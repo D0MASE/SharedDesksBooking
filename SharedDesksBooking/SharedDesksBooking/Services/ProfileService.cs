@@ -31,7 +31,7 @@ namespace SharedDesksBooking.Services
                         StartDate = res.StartDate,
                         EndDate = res.EndDate,
                         DeskId = res.DeskId,
-                        Number = desk.Number
+                        DeskNumber = desk.Number
                     })
                 .OrderByDescending(r => r.StartDate)
                 .ToListAsync();

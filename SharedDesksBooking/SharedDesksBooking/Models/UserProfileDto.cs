@@ -2,18 +2,19 @@
 {
     public class UserProfileDto
     {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public List<UserReservationDto> CurrentReservations { get; set; } = new();
-        public List<UserReservationDto> PastReservations { get; set; } = new();
+        public required string FirstName { get; init; }
+        public required string LastName { get; init; }
+
+        public List<UserReservationDto> CurrentReservations { get; init; } = new();
+        public List<UserReservationDto> PastReservations { get; init; } = new();
     }
 
     public class UserReservationDto
     {
-        public int Id { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public int DeskId { get; set; }
-        public string Number { get; set; } = string.Empty;
+        public int Id { get; init; }
+        public DateTime StartDate { get; init; }
+        public DateTime EndDate { get; init; }
+        public int DeskId { get; init; }
+        public required string DeskNumber { get; init; }
     }
 }

@@ -16,13 +16,13 @@ namespace SharedDesksBooking.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateReservation([FromBody] Reservation reservation)
+        public async Task<IActionResult> CreateReservation([FromBody] CreateReservationRequest request)
         {
-            var (success, message) = await _reservationService.CreateReservationAsync(reservation);
+            var (success, message) = await _reservationService.CreateReservationAsync(request);
 
             if (!success) return BadRequest(message);
 
-            return Ok(reservation);
+            return Ok(request);
         }
 
         [HttpDelete("{id}")]
