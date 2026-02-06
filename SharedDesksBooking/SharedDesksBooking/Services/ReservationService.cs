@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using SharedDesksBooking.Data;
 using SharedDesksBooking.Models;
 
@@ -7,7 +8,12 @@ namespace SharedDesksBooking.Services
     public class ReservationService : IReservationService
     {
         private readonly AppDbContext _context;
-        public ReservationService(AppDbContext context) { _context = context; }
+        private readonly IMapper _mapper;
+        public ReservationService(AppDbContext context, IMapper mapper) 
+        { 
+            _mapper = mapper;
+            _context = context; 
+        }
 
         public async Task<(bool Success, string Message)> CreateReservationAsync(CreateReservationRequest request)
         {
@@ -29,14 +35,7 @@ namespace SharedDesksBooking.Services
             if (isOccupied) return (false, "Desk is already reserved for these dates.");
 
             // MAPPING: Iš DTO sukuriame tikrą Reservation objektą
-            var reservation = new Reservation
-            {
-                DeskId = request.DeskId,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                StartDate = request.StartDate,
-                EndDate = request.EndDate
-            };
+            var reservation = _mapper.Map<Reservation>(request);
 
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
@@ -69,14 +68,7 @@ namespace SharedDesksBooking.Services
                 }
                 else
                 {
-                    var secondPart = new Reservation
-                    {
-                        DeskId = res.DeskId,
-                        FirstName = res.FirstName,
-                        LastName = res.LastName,
-                        StartDate = targetDate.AddDays(1),
-                        EndDate = res.EndDate
-                    };
+                    var secondPart = _mapper.Map<Reservation>(res);
                     res.EndDate = targetDate.AddDays(-1);
                     _context.Reservations.Add(secondPart);
                 }

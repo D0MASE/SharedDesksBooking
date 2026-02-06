@@ -3,6 +3,7 @@ using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using SharedDesksBooking.Constants;
 using SharedDesksBooking.Data;
+using SharedDesksBooking.Mappings;
 using SharedDesksBooking.Services;
 using SharedDesksBooking.Validators;
 
@@ -21,10 +22,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options => 
     options.UseInMemoryDatabase(AppConstants.DatabaseName));
 
+builder.Services.AddAutoMapper(typeof(MappingProfile));
+
 // --- DEPENDENCY INJECTION ---
 builder.Services.AddScoped<IDeskService, DeskService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+
 
 builder.Services.AddCors(options =>
 {

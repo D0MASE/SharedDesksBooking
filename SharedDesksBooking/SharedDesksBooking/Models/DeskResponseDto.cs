@@ -3,7 +3,7 @@
     /// <summary>
     /// Data Transfer Object for representing a desk with its current availability.
     /// </summary>
-    public class DeskResponseDto
+    public record DeskResponseDto
     {
         public int Id { get; init; } // 'init' reiškia, kad ID negalima keisti po sukūrimo
         public required string Number { get; init; }
@@ -14,7 +14,7 @@
     /// <summary>
     /// Data Transfer Object for reservation details shown in the desk list.
     /// </summary>
-    public class ReservationDto
+    public record ReservationDto
     {
         public int Id { get; init; }
         public required string FirstName { get; init; }

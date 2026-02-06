@@ -1,6 +1,6 @@
 ﻿namespace SharedDesksBooking.Models
 {
-    public class UserProfileDto
+    public record UserProfileDto
     {
         public required string FirstName { get; init; }
         public required string LastName { get; init; }
@@ -9,7 +9,7 @@
         public List<UserReservationDto> PastReservations { get; init; } = new();
     }
 
-    public class UserReservationDto
+    public record UserReservationDto
     {
         public int Id { get; init; }
         public DateTime StartDate { get; init; }
