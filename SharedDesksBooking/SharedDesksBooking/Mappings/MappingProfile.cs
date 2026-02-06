@@ -13,7 +13,8 @@ namespace SharedDesksBooking.Mappings
             CreateMap<CreateReservationRequest, Reservation>();
             CreateMap<Reservation, Reservation>().ForMember(desk => desk.Id, opt => opt.Ignore());
 
-            CreateMap<Desk, DeskResponseDto>();
+            CreateMap<Desk, DeskResponseDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
             CreateMap<Reservation, ReservationDto>();
         }
     }

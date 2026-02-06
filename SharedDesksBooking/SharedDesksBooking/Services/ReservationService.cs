@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SharedDesksBooking.Data;
 using SharedDesksBooking.Models;
+using SharedDesksBooking.Models.Enums;
 
 namespace SharedDesksBooking.Services
 {
@@ -23,8 +24,15 @@ namespace SharedDesksBooking.Services
                 return (false, "Stalas neegzistuoja.");
 
             // 2. Patikriname, ar stalas nėra remontuojamas
-            if (desk.IsUnderMaintenance)
+            if (desk.Status != DeskStatus.Available)
+            {
+                string reason = desk.Status == DeskStatus.UnderMaintenance
+                    ? "remontuojamas"
+                    : "nepasiekiamas";
+
                 return (false, "Šis stalas šiuo metu remontuojamas, rezervacija negalima.");
+            }
+               
             // Logic to check if the desk is already reserved for the chosen period
             var isOccupied = await _context.Reservations.AnyAsync(r =>
                 r.DeskId == request.DeskId &&

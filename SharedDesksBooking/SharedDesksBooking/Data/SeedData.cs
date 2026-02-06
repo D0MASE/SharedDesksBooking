@@ -1,4 +1,5 @@
 ﻿using SharedDesksBooking.Models;
+using SharedDesksBooking.Models.Enums;
 
 namespace SharedDesksBooking.Data
 {
@@ -12,11 +13,11 @@ namespace SharedDesksBooking.Data
             // 1. Seed Desks
             var desks = new List<Desk>
             {
-                new Desk { Id = 1, Number = "A-1", IsUnderMaintenance = false },
-                new Desk { Id = 2, Number = "A-2", IsUnderMaintenance = false },
-                new Desk { Id = 3, Number = "B-1", IsUnderMaintenance = true }, 
-                new Desk { Id = 4, Number = "B-2", IsUnderMaintenance = false },
-                new Desk { Id = 5, Number = "C-1", IsUnderMaintenance = false }
+                new Desk { Id = 1, Number = "A-1", Status = DeskStatus.Available },
+                new Desk { Id = 2, Number = "A-2", Status = DeskStatus.Available },
+                new Desk { Id = 3, Number = "B-1", Status = DeskStatus.UnderMaintenance },
+                new Desk { Id = 4, Number = "B-2", Status = DeskStatus.Available },
+                new Desk { Id = 5, Number = "C-1", Status = DeskStatus.Available }
             };
 
             context.Desks.AddRange(desks);
