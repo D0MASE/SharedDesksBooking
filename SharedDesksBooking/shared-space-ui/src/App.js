@@ -170,8 +170,7 @@ function App() {
           {/* --- DESK GRID SECTION --- */}
           <div className="row g-4">
             {desks.map((desk) => {
-              const statusClass = desk.isUnderMaintenance ? 'secondary' : desk.reservation ? 'danger' : 'success';
-              
+              const statusClass = desk.status === "UnderMaintenance" ? 'secondary' : desk.reservation ? 'danger' : 'success';
               const isMine = desk.reservation &&
                 desk.reservation.firstName.toLowerCase() === user.firstName.toLowerCase() &&
                 desk.reservation.lastName.toLowerCase() === user.lastName.toLowerCase();
@@ -182,7 +181,7 @@ function App() {
                     className={`card h-100 border-${statusClass} shadow-sm`}
                     title={desk.reservation 
                       ? `Reserved by: ${desk.reservation.firstName} ${desk.reservation.lastName}` 
-                      : desk.isUnderMaintenance ? "Under Maintenance" : "Available"}
+                      : desk.status === "UnderMaintenance" ? "Under Maintenance" : "Available"}
                   >
                     <div className={`card-header bg-${statusClass} text-white fw-bold py-3`}>
                       Desk {desk.number}
@@ -196,7 +195,7 @@ function App() {
                           <button onClick={() => handleCancel(desk.reservation.id, false)} className="btn btn-outline-danger btn-sm">Cancel all</button>
                         </div>
                       ) : (
-                        !desk.reservation && !desk.isUnderMaintenance && (
+                        !desk.reservation && desk.status !== "UnderMaintenance" && (
                           bookingDeskId === desk.id ? (
                             <div className="w-100">
                               <small className="fw-bold mb-1 d-block">Select Range:</small>
@@ -227,9 +226,9 @@ function App() {
                           )
                         )
                       )}
-                      {(desk.reservation && !isMine) || desk.isUnderMaintenance ? (
+                      {(desk.reservation && !isMine) || desk.status === "UnderMaintenance" ? (
                         <span className="text-muted small">
-                          {desk.isUnderMaintenance ? "Under Maintenance" : "Not Available"}
+                          {desk.status === "UnderMaintenance" ? "Under Maintenance" : "Not Available"}
                         </span>
                       ) : null}
                     </div>

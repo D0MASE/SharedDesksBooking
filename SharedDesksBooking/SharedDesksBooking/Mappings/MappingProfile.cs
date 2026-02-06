@@ -1,21 +1,20 @@
 ﻿using AutoMapper;
 using SharedDesksBooking.Models;
 
-namespace SharedDesksBooking.Mappings
+namespace SharedDesksBooking.Mappings;
+
+public class MappingProfile : Profile
 {
-    public class MappingProfile : Profile
+    public MappingProfile()
     {
-        public MappingProfile()
-        {
-            CreateMap<Reservation, UserReservationDto>();
-            CreateMap<Desk, DeskResponseDto>();
+        CreateMap<Reservation, UserReservationDto>();
+        CreateMap<Desk, DeskResponseDto>();
 
-            CreateMap<CreateReservationRequest, Reservation>();
-            CreateMap<Reservation, Reservation>().ForMember(desk => desk.Id, opt => opt.Ignore());
+        CreateMap<CreateReservationRequest, Reservation>();
+        CreateMap<Reservation, Reservation>();
 
-            CreateMap<Desk, DeskResponseDto>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
-            CreateMap<Reservation, ReservationDto>();
-        }
+        CreateMap<Desk, DeskResponseDto>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+        CreateMap<Reservation, ReservationDto>();
     }
 }

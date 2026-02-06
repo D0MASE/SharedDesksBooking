@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
+namespace SharedDesksBooking.Models;
 public class CreateReservationRequest
 {
     public int DeskId { get; set; }

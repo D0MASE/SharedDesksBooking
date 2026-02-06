@@ -2,31 +2,30 @@
 using SharedDesksBooking.Services;
 using SharedDesksBooking.Models;
 
-namespace SharedDesksBooking.Controllers
+namespace SharedDesksBooking.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class ProfileController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProfileController : ControllerBase
+    private readonly IProfileService _profileService;
+
+    // Konstruktoriuje injektuojame servisą
+    public ProfileController(IProfileService profileService)
     {
-        private readonly IProfileService _profileService;
+        _profileService = profileService;
+    }
 
-        // Konstruktoriuje injektuojame servisą
-        public ProfileController(IProfileService profileService)
+    [HttpGet]
+    public async Task<IActionResult> GetUserProfile([FromQuery] string firstName, [FromQuery] string lastName)
+    {
+        var profile = await _profileService.GetUserProfileAsync(firstName, lastName);
+
+        if (profile == null)
         {
-            _profileService = profileService;
+            return BadRequest("Vardas ir pavardė yra privalomi.");
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetUserProfile([FromQuery] string firstName, [FromQuery] string lastName)
-        {
-            var profile = await _profileService.GetUserProfileAsync(firstName, lastName);
-
-            if (profile == null)
-            {
-                return BadRequest("Vardas ir pavardė yra privalomi.");
-            }
-
-            return Ok(profile);
-        }
+        return Ok(profile);
     }
 }

@@ -4,90 +4,98 @@ using SharedDesksBooking.Data;
 using SharedDesksBooking.Models;
 using SharedDesksBooking.Models.Enums;
 
-namespace SharedDesksBooking.Services
+namespace SharedDesksBooking.Services;
+
+public class ReservationService : IReservationService
 {
-    public class ReservationService : IReservationService
+    private readonly AppDbContext _context;
+    private readonly IMapper _mapper;
+    public ReservationService(AppDbContext context, IMapper mapper) 
+    { 
+        _mapper = mapper;
+        _context = context; 
+    }
+
+    public async Task<(bool Success, string Message)> CreateReservationAsync(CreateReservationRequest request)
     {
-        private readonly AppDbContext _context;
-        private readonly IMapper _mapper;
-        public ReservationService(AppDbContext context, IMapper mapper) 
-        { 
-            _mapper = mapper;
-            _context = context; 
-        }
+        var desk = await _context.Desks.FindAsync(request.DeskId);
 
-        public async Task<(bool Success, string Message)> CreateReservationAsync(CreateReservationRequest request)
+        if (desk == null)
+            return (false, "Stalas neegzistuoja.");
+
+        // 2. Patikriname, ar stalas nėra remontuojamas
+        if (desk.Status != DeskStatus.Available)
         {
-            var desk = await _context.Desks.FindAsync(request.DeskId);
+            string reason = desk.Status == DeskStatus.UnderMaintenance
+                ? "remontuojamas"
+                : "nepasiekiamas";
 
-            if (desk == null)
-                return (false, "Stalas neegzistuoja.");
-
-            // 2. Patikriname, ar stalas nėra remontuojamas
-            if (desk.Status != DeskStatus.Available)
-            {
-                string reason = desk.Status == DeskStatus.UnderMaintenance
-                    ? "remontuojamas"
-                    : "nepasiekiamas";
-
-                return (false, "Šis stalas šiuo metu remontuojamas, rezervacija negalima.");
-            }
-               
-            // Logic to check if the desk is already reserved for the chosen period
-            var isOccupied = await _context.Reservations.AnyAsync(r =>
-                r.DeskId == request.DeskId &&
-                request.StartDate.Date <= r.EndDate.Date &&
-                request.EndDate.Date >= r.StartDate.Date
-            );
-
-            if (isOccupied) return (false, "Desk is already reserved for these dates.");
-
-            // MAPPING: Iš DTO sukuriame tikrą Reservation objektą
-            var reservation = _mapper.Map<Reservation>(request);
-
-            _context.Reservations.Add(reservation);
-            await _context.SaveChangesAsync();
-            return (true, string.Empty);
+            return (false, "Šis stalas šiuo metu remontuojamas, rezervacija negalima.");
         }
+           
+        // Logic to check if the desk is already reserved for the chosen period
+        var isOccupied = await _context.Reservations.AnyAsync(r =>
+            r.DeskId == request.DeskId &&
+            request.StartDate.Date <= r.EndDate.Date &&
+            request.EndDate.Date >= r.StartDate.Date
+        );
 
-        public async Task<(bool Success, string Message)> CancelReservationAsync(int id, bool onlyToday, DateTime date)
+        if (isOccupied) return (false, "Desk is already reserved for these dates.");
+
+        // MAPPING: Iš DTO sukuriame tikrą Reservation objektą
+        var reservation = _mapper.Map<Reservation>(request);
+
+        _context.Reservations.Add(reservation);
+        await _context.SaveChangesAsync();
+        return (true, string.Empty);
+    }
+
+    public async Task<(bool Success, string Message)> CancelReservationAsync(int id, bool onlyToday, DateTime date)
+    {
+        var res = await _context.Reservations.FirstOrDefaultAsync(r => r.Id == id);
+        if (res == null) return (false, "Reservation not found.");
+
+        var targetDate = date.Date;
+
+        if (onlyToday)
         {
-            var res = await _context.Reservations.FirstOrDefaultAsync(r => r.Id == id);
-            if (res == null) return (false, "Reservation not found.");
+            if (targetDate < res.StartDate.Date || targetDate > res.EndDate.Date)
+                return (false, "Selected date is not within the request period.");
 
-            var targetDate = date.Date;
-
-            if (onlyToday)
-            {
-                if (targetDate < res.StartDate.Date || targetDate > res.EndDate.Date)
-                    return (false, "Selected date is not within the request period.");
-
-                if (res.StartDate.Date == res.EndDate.Date)
-                {
-                    _context.Reservations.Remove(res);
-                }
-                else if (res.StartDate.Date == targetDate)
-                {
-                    res.StartDate = targetDate.AddDays(1);
-                }
-                else if (res.EndDate.Date == targetDate)
-                {
-                    res.EndDate = targetDate.AddDays(-1);
-                }
-                else
-                {
-                    var secondPart = _mapper.Map<Reservation>(res);
-                    res.EndDate = targetDate.AddDays(-1);
-                    _context.Reservations.Add(secondPart);
-                }
-            }
-            else
+            if (res.StartDate.Date == res.EndDate.Date)
             {
                 _context.Reservations.Remove(res);
             }
+            else if (res.StartDate.Date == targetDate)
+            {
+                res.StartDate = targetDate.AddDays(1);
+            }
+            else if (res.EndDate.Date == targetDate)
+            {
+                res.EndDate = targetDate.AddDays(-1);
+            }
+            else
+            {
+                var secondPart = new Reservation
+                {
+                    DeskId = res.DeskId,
+                    FirstName = res.FirstName,
+                    LastName = res.LastName,
+                    StartDate = targetDate.AddDays(1),
+                    EndDate = res.EndDate
+                };
 
-            await _context.SaveChangesAsync();
-            return (true, string.Empty);
+                res.EndDate = targetDate.AddDays(-1);
+
+                _context.Reservations.Add(secondPart);
+            }
         }
+        else
+        {
+            _context.Reservations.Remove(res);
+        }
+
+        await _context.SaveChangesAsync();
+        return (true, string.Empty);
     }
 }
