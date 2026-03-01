@@ -4,25 +4,18 @@ using SharedDesksBooking.Models;
 
 namespace SharedDesksBooking.Services;
 
-public class ProfileService : IProfileService
+public class ProfileService(AppDbContext context) : IProfileService
 {
-    private readonly AppDbContext _context;
-
-    public ProfileService(AppDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<UserProfileDto?> GetUserProfileAsync(string firstName, string lastName)
     {
         if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
             return null;
 
         // Gauname visas rezervacijas ir sujungiam su stalo informacija
-        var userReservations = await _context.Reservations
+        var userReservations = await context.Reservations
             .Where(r => r.FirstName.ToLower() == firstName.ToLower() &&
                         r.LastName.ToLower() == lastName.ToLower())
-            .Join(_context.Desks,
+            .Join(context.Desks,
                 res => res.DeskId,
                 desk => desk.Id,
                 (res, desk) => new UserReservationDto

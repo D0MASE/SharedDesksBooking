@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using SharedDesksBooking.Controllers;
 using SharedDesksBooking.Data;
 using SharedDesksBooking.Models;
+using SharedDesksBooking.Services;
+using SharedDesksBooking.Models.Enums;
 using Xunit;
 
 namespace SharedDesksBooking.Tests
@@ -21,7 +23,8 @@ namespace SharedDesksBooking.Tests
         public async Task GetUserProfile_ReturnsBadRequest_WhenNamesAreEmpty()
         {
             var context = GetDatabaseContext();
-            var controller = new ProfileController(context);
+            var service = new ProfileService(context);
+            var controller = new ProfileController(service);
 
             var result = await controller.GetUserProfile("", "");
 
@@ -31,12 +34,10 @@ namespace SharedDesksBooking.Tests
         [Fact]
         public async Task GetUserProfile_CorrectlySplitsPastAndFuture()
         {
-            // Arrange
             var context = GetDatabaseContext();
             var today = DateTime.Today;
-            context.Desks.Add(new Desk { Id = 1, Number = "A1" });
+            context.Desks.Add(new Desk { Id = 1, Number = "A1", Status = DeskStatus.Available });
 
-            // Past reservation (ended yesterday)
             context.Reservations.Add(new Reservation
             {
                 DeskId = 1,
@@ -46,7 +47,6 @@ namespace SharedDesksBooking.Tests
                 EndDate = today.AddDays(-1)
             });
 
-            // Current reservation (ends today)
             context.Reservations.Add(new Reservation
             {
                 DeskId = 1,
@@ -57,26 +57,24 @@ namespace SharedDesksBooking.Tests
             });
 
             await context.SaveChangesAsync();
-            var controller = new ProfileController(context);
+            var service = new ProfileService(context);
+            var controller = new ProfileController(service);
 
-            // Act
             var result = await controller.GetUserProfile("John", "Doe");
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var profile = Assert.IsType<UserProfileDto>(okResult.Value);
 
             Assert.Single(profile.PastReservations);
             Assert.Single(profile.CurrentReservations);
-            Assert.Equal("A1", profile.CurrentReservations[0].Number);
+            Assert.Equal("A1", profile.CurrentReservations[0].DeskNumber);
         }
 
         [Fact]
         public async Task GetUserProfile_IsCaseInsensitive()
         {
-            // Arrange
             var context = GetDatabaseContext();
-            context.Desks.Add(new Desk { Id = 1, Number = "A1" });
+            context.Desks.Add(new Desk { Id = 1, Number = "A1", Status = DeskStatus.Available });
             context.Reservations.Add(new Reservation
             {
                 DeskId = 1,
@@ -86,12 +84,13 @@ namespace SharedDesksBooking.Tests
                 EndDate = DateTime.Today
             });
             await context.SaveChangesAsync();
-            var controller = new ProfileController(context);
+            
+            var service = new ProfileService(context);
+            var controller = new ProfileController(service);
 
-            // Act: Search with lowercase
+            // Search with lowercase
             var result = await controller.GetUserProfile("john", "doe");
 
-            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var profile = Assert.IsType<UserProfileDto>(okResult.Value);
             Assert.NotEmpty(profile.CurrentReservations);
@@ -101,7 +100,8 @@ namespace SharedDesksBooking.Tests
         public async Task GetUserProfile_ReturnsEmptyLists_ForUnknownUser()
         {
             var context = GetDatabaseContext();
-            var controller = new ProfileController(context);
+            var service = new ProfileService(context);
+            var controller = new ProfileController(service);
 
             var result = await controller.GetUserProfile("Ghost", "User");
 

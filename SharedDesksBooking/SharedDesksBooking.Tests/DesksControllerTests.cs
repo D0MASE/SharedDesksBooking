@@ -1,52 +1,61 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SharedDesksBooking.Controllers;
 using SharedDesksBooking.Data;
+using SharedDesksBooking.Mappings;
 using SharedDesksBooking.Models;
+using SharedDesksBooking.Models.Enums;
+using SharedDesksBooking.Services;
 using Xunit;
 
 namespace SharedDesksBooking.Tests
 {
     public class DesksControllerTests
     {
+        private IMapper _mapper;
+        
+        public DesksControllerTests()
+        {
+            var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>());
+            _mapper = config.CreateMapper();
+        }
+
         private AppDbContext GetDatabaseContext()
         {
             var options = new DbContextOptionsBuilder<AppDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            var databaseContext = new AppDbContext(options);
-            databaseContext.Database.EnsureCreated();
-            return databaseContext;
+            return new AppDbContext(options);
         }
 
         [Fact]
         public async Task GetDesks_ReturnsAllDesks_EvenIfNoReservationsExist()
         {
-            // Scenario: Database has 2 desks, no reservations.
             var context = GetDatabaseContext();
             context.Desks.AddRange(
-                new Desk { Id = 1, Number = "A1" },
-                new Desk { Id = 2, Number = "A2" }
+                new Desk { Id = 1, Number = "A1", Status = DeskStatus.Available },
+                new Desk { Id = 2, Number = "A2", Status = DeskStatus.Available }
             );
             await context.SaveChangesAsync();
 
-            var controller = new DesksController(context);
+            var service = new DeskService(context, _mapper);
+            var controller = new DesksController(service);
 
             var result = await controller.GetDesks(null);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsAssignableFrom<IEnumerable<object>>(okResult.Value);
+            var response = Assert.IsAssignableFrom<IEnumerable<DeskResponseDto>>(okResult.Value);
             Assert.Equal(2, response.Count());
         }
 
         [Fact]
         public async Task GetDesks_ReturnsReservationDetails_WhenDeskIsOccupiedOnTargetDate()
         {
-            // Scenario: Desk is reserved exactly for the requested date.
             var context = GetDatabaseContext();
             var targetDate = new DateTime(2025, 10, 10);
 
-            context.Desks.Add(new Desk { Id = 1, Number = "B1" });
+            context.Desks.Add(new Desk { Id = 1, Number = "B1", Status = DeskStatus.Available });
             context.Reservations.Add(new Reservation
             {
                 DeskId = 1,
@@ -57,13 +66,14 @@ namespace SharedDesksBooking.Tests
             });
             await context.SaveChangesAsync();
 
-            var controller = new DesksController(context);
+            var service = new DeskService(context, _mapper);
+            var controller = new DesksController(service);
 
             var result = await controller.GetDesks(targetDate);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsAssignableFrom<IEnumerable<DeskResponseDto>>(okResult.Value);
-            var firstDesk = Enumerable.First(response);
+            var firstDesk = response.First();
 
             Assert.NotNull(firstDesk.Reservation);
             Assert.Equal("John", firstDesk.Reservation.FirstName);
@@ -72,13 +82,12 @@ namespace SharedDesksBooking.Tests
         [Fact]
         public async Task GetDesks_ReturnsReservation_WhenDateIsWithinRange()
         {
-            // Scenario: Reservation is from 10th to 15th. We check 12th.
             var context = GetDatabaseContext();
             var startDate = new DateTime(2025, 10, 10);
             var checkDate = new DateTime(2025, 10, 12);
             var endDate = new DateTime(2025, 10, 15);
 
-            context.Desks.Add(new Desk { Id = 1, Number = "C1" });
+            context.Desks.Add(new Desk { Id = 1, Number = "C1", Status = DeskStatus.Available });
             context.Reservations.Add(new Reservation
             {
                 DeskId = 1,
@@ -89,13 +98,14 @@ namespace SharedDesksBooking.Tests
             });
             await context.SaveChangesAsync();
 
-            var controller = new DesksController(context);
+            var service = new DeskService(context, _mapper);
+            var controller = new DesksController(service);
 
             var result = await controller.GetDesks(checkDate);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsAssignableFrom<IEnumerable<DeskResponseDto>>(okResult.Value);
-            var desk = Enumerable.First(response);
+            var desk = response.First();
 
             Assert.NotNull(desk.Reservation);
             Assert.Equal("Alice", desk.Reservation.FirstName);
@@ -104,12 +114,11 @@ namespace SharedDesksBooking.Tests
         [Fact]
         public async Task GetDesks_ReturnsNullReservation_WhenDateIsOutsideRange()
         {
-            // Scenario: Desk is reserved tomorrow, but we check today.
             var context = GetDatabaseContext();
             var today = DateTime.Today;
             var tomorrow = today.AddDays(1);
 
-            context.Desks.Add(new Desk { Id = 1, Number = "D1" });
+            context.Desks.Add(new Desk { Id = 1, Number = "D1", Status = DeskStatus.Available });
             context.Reservations.Add(new Reservation
             {
                 DeskId = 1,
@@ -120,47 +129,46 @@ namespace SharedDesksBooking.Tests
             });
             await context.SaveChangesAsync();
 
-            var controller = new DesksController(context);
+            var service = new DeskService(context, _mapper);
+            var controller = new DesksController(service);
 
             var result = await controller.GetDesks(today);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsAssignableFrom<IEnumerable<DeskResponseDto>>(okResult.Value);
-            var desk = Enumerable.First(response);
+            var desk = response.First();
 
-            // Reservation should be null because it hasn't started yet
             Assert.Null(desk.Reservation);
         }
 
         [Fact]
         public async Task GetDesks_CorrectlyShowsMaintenanceStatus()
         {
-            // Scenario: One desk is under maintenance, another is not.
             var context = GetDatabaseContext();
-            context.Desks.Add(new Desk { Id = 1, Number = "M1", IsUnderMaintenance = true });
-            context.Desks.Add(new Desk { Id = 2, Number = "M2", IsUnderMaintenance = false });
+            context.Desks.Add(new Desk { Id = 1, Number = "M1", Status = DeskStatus.UnderMaintenance });
+            context.Desks.Add(new Desk { Id = 2, Number = "M2", Status = DeskStatus.Available });
             await context.SaveChangesAsync();
 
-            var controller = new DesksController(context);
+            var service = new DeskService(context, _mapper);
+            var controller = new DesksController(service);
 
             var result = await controller.GetDesks(null);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsAssignableFrom<IEnumerable<DeskResponseDto>>(okResult.Value);
 
-            var desk1 = Enumerable.ElementAt(response, 0);
-            var desk2 = Enumerable.ElementAt(response, 1);
+            var desk1 = response.First(d => d.Number == "M1");
+            var desk2 = response.First(d => d.Number == "M2");
 
-            Assert.True(desk1.IsUnderMaintenance);
-            Assert.False(desk2.IsUnderMaintenance);
+            Assert.Equal("UnderMaintenance", desk1.Status);
+            Assert.Equal("Available", desk2.Status);
         }
 
         [Fact]
         public async Task GetDesks_DefaultsToToday_WhenNoDateProvided()
         {
-            // Scenario: Call GetDesks() without parameters. Should use DateTime.Today.
             var context = GetDatabaseContext();
-            context.Desks.Add(new Desk { Id = 1, Number = "T1" });
+            context.Desks.Add(new Desk { Id = 1, Number = "T1", Status = DeskStatus.Available });
             context.Reservations.Add(new Reservation
             {
                 DeskId = 1,
@@ -171,13 +179,14 @@ namespace SharedDesksBooking.Tests
             });
             await context.SaveChangesAsync();
 
-            var controller = new DesksController(context);
+            var service = new DeskService(context, _mapper);
+            var controller = new DesksController(service);
 
-            var result = await controller.GetDesks(null); // passing null
+            var result = await controller.GetDesks(null);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsAssignableFrom<IEnumerable<DeskResponseDto>>(okResult.Value);
-            var desk = Enumerable.First(response);
+            var desk = response.First();
 
             Assert.NotNull(desk.Reservation);
             Assert.Equal("TodayUser", desk.Reservation.FirstName);

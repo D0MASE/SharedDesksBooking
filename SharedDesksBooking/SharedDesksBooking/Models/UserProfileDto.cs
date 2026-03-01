@@ -8,12 +8,3 @@ public record UserProfileDto
     public List<UserReservationDto> CurrentReservations { get; init; } = new();
     public List<UserReservationDto> PastReservations { get; init; } = new();
 }
-
-public record UserReservationDto
-{
-    public int Id { get; init; }
-    public DateTime StartDate { get; init; }
-    public DateTime EndDate { get; init; }
-    public int DeskId { get; init; }
-    public required string DeskNumber { get; init; }
-}

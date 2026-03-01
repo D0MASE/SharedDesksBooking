@@ -10,15 +10,3 @@ public record DeskResponseDto
     public required string Status { get; init; }
     public ReservationDto? Reservation { get; init; }
 }
-
-/// <summary>
-/// Data Transfer Object for reservation details shown in the desk list.
-/// </summary>
-public record ReservationDto
-{
-    public int Id { get; init; }
-    public required string FirstName { get; init; }
-    public required string LastName { get; init; }
-    public DateTime StartDate { get; init; }
-    public DateTime EndDate { get; init; }
-}

@@ -24,12 +24,12 @@ function App() {
 
 
   // --- API CALLS ---
-  
+
   // Fetch desks and their status for the selected date
   const loadDesks = async (date) => {
     try {
       const formattedDate = date.toLocaleDateString('en-CA');
-      const response = await axios.get(`https://localhost:7277/api/desks?date=${formattedDate}`);
+      const response = await axios.get(`http://localhost:5143/api/desks?date=${formattedDate}`);
       setDesks(response.data);
     } catch (error) {
       console.error("Error: Could not fetch desks.");
@@ -38,16 +38,16 @@ function App() {
 
   // Connects to the DELETE method with ReservationController
   const handleCancel = async (reservationId, onlyToday) => {
-    const message = onlyToday 
-      ? "Are you sure you want to cancel for today only?" 
+    const message = onlyToday
+      ? "Are you sure you want to cancel for today only?"
       : "Are you sure you want to cancel the entire reservation range?";
 
     if (!window.confirm(message)) return;
 
     try {
       const formattedDate = selectedDate.toLocaleDateString('en-CA');
-      await axios.delete(`https://localhost:7277/api/reservations/${reservationId}?onlyToday=${onlyToday}&date=${formattedDate}`);
-      
+      await axios.delete(`http://localhost:5143/api/reservations/${reservationId}?onlyToday=${onlyToday}&date=${formattedDate}`);
+
       loadDesks(selectedDate);
     } catch (error) {
       console.error("Error cancelling reservation:", error);
@@ -62,8 +62,8 @@ function App() {
       return;
     }
 
-    try { 
-      await axios.post(`https://localhost:7277/api/reservations`, {
+    try {
+      await axios.post(`http://localhost:5143/api/reservations`, {
         deskId: deskId,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -84,9 +84,9 @@ function App() {
       alert("Please enter your first and last name to view profile.");
       return;
     }
-    
+
     try {
-      const response = await axios.get(`https://localhost:7277/api/profile?firstName=${user.firstName}&lastName=${user.lastName}`);
+      const response = await axios.get(`http://localhost:5143/api/profile?firstName=${user.firstName}&lastName=${user.lastName}`);
       setProfileData(response.data);
       setView("profile");
     }
@@ -107,13 +107,13 @@ function App() {
       <nav className="d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded border">
         <h2 className="m-0 text-primary">Office Booking</h2>
         <div>
-          <button 
+          <button
             className={`btn ${view === 'grid' ? 'btn-primary' : 'btn-outline-primary'} me-2`}
             onClick={() => setView("grid")}
           >
             Desks Grid
           </button>
-          <button 
+          <button
             className={`btn ${view === 'profile' ? 'btn-primary' : 'btn-outline-primary'}`}
             onClick={fetchProfile}
           >
@@ -133,21 +133,21 @@ function App() {
               <h5 className="mb-3">Identify Yourself</h5>
               <div className="row g-2">
                 <div className="col">
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    placeholder="First Name" 
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="First Name"
                     value={user.firstName}
-                    onChange={(e) => setUser({...user, firstName: e.target.value})}
+                    onChange={(e) => setUser({ ...user, firstName: e.target.value })}
                   />
                 </div>
                 <div className="col">
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    placeholder="Last Name" 
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Last Name"
                     value={user.lastName}
-                    onChange={(e) => setUser({...user, lastName: e.target.value})}
+                    onChange={(e) => setUser({ ...user, lastName: e.target.value })}
                   />
                 </div>
               </div>
@@ -158,15 +158,15 @@ function App() {
           <div className="row justify-content-center mb-5">
             <div className="col-md-4 p-4 shadow-sm bg-light rounded text-center border">
               <label className="form-label fw-bold d-block">Select View Date:</label>
-              <DatePicker 
-                selected={selectedDate} 
+              <DatePicker
+                selected={selectedDate}
                 onChange={(date) => setSelectedDate(date)}
                 dateFormat="yyyy-MM-dd"
                 className="form-control text-center"
               />
             </div>
           </div>
-          
+
           {/* --- DESK GRID SECTION --- */}
           <div className="row g-4">
             {desks.map((desk) => {
@@ -177,10 +177,10 @@ function App() {
 
               return (
                 <div key={desk.id} className="col-6 col-md-4 col-lg-3 text-center">
-                  <div 
+                  <div
                     className={`card h-100 border-${statusClass} shadow-sm`}
-                    title={desk.reservation 
-                      ? `Reserved by: ${desk.reservation.firstName} ${desk.reservation.lastName}` 
+                    title={desk.reservation
+                      ? `Reserved by: ${desk.reservation.firstName} ${desk.reservation.lastName}`
                       : desk.status === "UnderMaintenance" ? "Under Maintenance" : "Available"}
                   >
                     <div className={`card-header bg-${statusClass} text-white fw-bold py-3`}>
@@ -241,51 +241,51 @@ function App() {
       ) : (
         /* --- VIEW 2: PROFILE PAGE --- */
         !profileData ? (
-        <div className="text-center mt-5">
-          <div className="spinner-border text-primary" role="status"></div>
-          <p className="mt-2">Loading your profile...</p>
-        </div>
+          <div className="text-center mt-5">
+            <div className="spinner-border text-primary" role="status"></div>
+            <p className="mt-2">Loading your profile...</p>
+          </div>
         ) : (
-        <div className="card shadow-sm p-4 animate-fade-in bg-white">
-          <h3 className="text-center mb-4 border-bottom pb-3">
-            {profileData?.firstName} {profileData?.lastName}'s History
-          </h3>
-          <div className="row">
-            {/* Current/Active Bookings */}
-            <div className="col-md-6">
-              <h5 className="text-success border-bottom pb-2">Active Reservations</h5>
-              {profileData?.currentReservations?.length > 0 ? (
-                <div className="list-group">
-                  {profileData.currentReservations.map(res => (
-                    <div key={res.id} className="list-group-item border-start-0 border-end-0">
-                      <strong>Desk {res.number}</strong>
-                      <div className="text-muted small">
-                        {new Date(res.startDate).toLocaleDateString()} - {new Date(res.endDate).toLocaleDateString()}
+          <div className="card shadow-sm p-4 animate-fade-in bg-white">
+            <h3 className="text-center mb-4 border-bottom pb-3">
+              {profileData?.firstName} {profileData?.lastName}'s History
+            </h3>
+            <div className="row">
+              {/* Current/Active Bookings */}
+              <div className="col-md-6">
+                <h5 className="text-success border-bottom pb-2">Active Reservations</h5>
+                {profileData?.currentReservations?.length > 0 ? (
+                  <div className="list-group">
+                    {profileData.currentReservations.map(res => (
+                      <div key={res.id} className="list-group-item border-start-0 border-end-0">
+                        <strong>Desk {res.number}</strong>
+                        <div className="text-muted small">
+                          {new Date(res.startDate).toLocaleDateString()} - {new Date(res.endDate).toLocaleDateString()}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : <p className="text-muted">No active bookings found.</p>}
-            </div>
+                    ))}
+                  </div>
+                ) : <p className="text-muted">No active bookings found.</p>}
+              </div>
 
-            {/* Past Bookings */}
-            <div className="col-md-6 mt-4 mt-md-0">
-              <h5 className="text-secondary border-bottom pb-2">Past History</h5>
-              {profileData?.pastReservations.length > 0 ? (
-                <div className="list-group">
-                  {profileData.pastReservations.map(res => (
-                    <div key={res.id} className="list-group-item list-group-item-light border-start-0 border-end-0">
-                      <strong>Desk {res.number}</strong>
-                      <div className="text-muted small">
-                        {new Date(res.startDate).toLocaleDateString()} - {new Date(res.endDate).toLocaleDateString()}
+              {/* Past Bookings */}
+              <div className="col-md-6 mt-4 mt-md-0">
+                <h5 className="text-secondary border-bottom pb-2">Past History</h5>
+                {profileData?.pastReservations.length > 0 ? (
+                  <div className="list-group">
+                    {profileData.pastReservations.map(res => (
+                      <div key={res.id} className="list-group-item list-group-item-light border-start-0 border-end-0">
+                        <strong>Desk {res.number}</strong>
+                        <div className="text-muted small">
+                          {new Date(res.startDate).toLocaleDateString()} - {new Date(res.endDate).toLocaleDateString()}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : <p className="text-muted">No past reservations found.</p>}
+                    ))}
+                  </div>
+                ) : <p className="text-muted">No past reservations found.</p>}
+              </div>
             </div>
           </div>
-        </div>
         )
       )}
     </div>
