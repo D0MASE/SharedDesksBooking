@@ -58,6 +58,7 @@ namespace SharedDesksBooking.Tests
             var service = new ReservationService(context, _mapper);
             var controller = new ReservationsController(service);
             var request = new CreateReservationRequest { 
+                DeskId = 1,
                 FirstName = "John", LastName = "Doe",
                 StartDate = DateTime.Today.AddDays(-1), 
                 EndDate = DateTime.Today 

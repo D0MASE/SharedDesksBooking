@@ -10,6 +10,9 @@ public class ReservationService(AppDbContext context, IMapper mapper) : IReserva
 {
     public async Task<(bool Success, string Message)> CreateReservationAsync(CreateReservationRequest request)
     {
+        if (request.StartDate.Date < DateTime.Today)
+            return (false, "Cannot book in the past.");
+
         var desk = await context.Desks.FindAsync(request.DeskId);
 
         if (desk == null)
