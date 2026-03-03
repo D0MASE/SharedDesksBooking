@@ -45,3 +45,5 @@ jobs:
     - name: Build
       working-directory: SharedDesksBooking/shared-space-ui
       run: npm run build
+      env:
+        CI: false
