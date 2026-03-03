@@ -195,5 +195,93 @@ namespace SharedDesksBooking.Tests
             var badRequest = Assert.IsType<BadRequestObjectResult>(result);
             Assert.Equal("Selected date is not within the request period.", badRequest.Value);
         }
+
+        [Fact]
+        public async Task CreateReservation_ReturnsBadRequest_WhenDeskNotFound()
+        {
+            var context = GetDatabaseContext();
+            var service = new ReservationService(context, _mapper);
+            var controller = new ReservationsController(service);
+            var request = new CreateReservationRequest { 
+                DeskId = 999, 
+                FirstName = "John", LastName = "Doe",
+                StartDate = DateTime.Today, EndDate = DateTime.Today 
+            };
+
+            var result = await controller.CreateReservation(request);
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Stalas neegzistuoja.", badRequest.Value);
+        }
+
+        [Fact]
+        public async Task CancelReservation_OnlyToday_AtStart_MovesStart()
+        {
+            var context = GetDatabaseContext();
+            context.Reservations.Add(new Reservation { 
+                Id = 1, DeskId = 1, FirstName = "John", LastName = "Doe",
+                StartDate = DateTime.Today, EndDate = DateTime.Today.AddDays(2) 
+            });
+            await context.SaveChangesAsync();
+
+            var service = new ReservationService(context, _mapper);
+            var controller = new ReservationsController(service);
+            await controller.CancelReservation(1, true, DateTime.Today);
+
+            var res = await context.Reservations.FirstAsync();
+            Assert.Equal(DateTime.Today.AddDays(1), res.StartDate.Date);
+        }
+
+        [Fact]
+        public async Task CancelReservation_OnlyToday_AtEnd_MovesEnd()
+        {
+            var context = GetDatabaseContext();
+            context.Reservations.Add(new Reservation { 
+                Id = 1, DeskId = 1, FirstName = "John", LastName = "Doe",
+                StartDate = DateTime.Today, EndDate = DateTime.Today.AddDays(2) 
+            });
+            await context.SaveChangesAsync();
+
+            var service = new ReservationService(context, _mapper);
+            var controller = new ReservationsController(service);
+            await controller.CancelReservation(1, true, DateTime.Today.AddDays(2));
+
+            var res = await context.Reservations.FirstAsync();
+            Assert.Equal(DateTime.Today.AddDays(1), res.EndDate.Date);
+        }
+
+        [Fact]
+        public async Task CancelReservation_OnlyToday_SingleDay_RemovesReservation()
+        {
+            var context = GetDatabaseContext();
+            context.Reservations.Add(new Reservation { 
+                Id = 1, DeskId = 1, FirstName = "John", LastName = "Doe",
+                StartDate = DateTime.Today, EndDate = DateTime.Today 
+            });
+            await context.SaveChangesAsync();
+
+            var service = new ReservationService(context, _mapper);
+            var controller = new ReservationsController(service);
+            await controller.CancelReservation(1, true, DateTime.Today);
+
+            var reservations = await context.Reservations.ToListAsync();
+            Assert.Empty(reservations);
+        }
+
+        [Fact]
+        public async Task CreateReservation_ReturnsBadRequest_WhenBookingInPast()
+        {
+            var context = GetDatabaseContext();
+            var service = new ReservationService(context, _mapper);
+            var controller = new ReservationsController(service);
+            var request = new CreateReservationRequest { 
+                DeskId = 1, 
+                FirstName = "John", LastName = "Doe",
+                StartDate = DateTime.Today.AddDays(-1), EndDate = DateTime.Today 
+            };
+
+            var result = await controller.CreateReservation(request);
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal("Cannot book in the past.", badRequest.Value);
+        }
     }
 }
