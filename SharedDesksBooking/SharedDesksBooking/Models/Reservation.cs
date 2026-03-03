@@ -5,8 +5,8 @@ namespace SharedDesksBooking.Models;
 public class Reservation
 {
     public int Id { get; set; }
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
+    public string FirstName { get; set; } = default!;
+    public string LastName { get; set; } = default!;
     public string FullName => $"{FirstName} {LastName}";
 
     public DateTime StartDate { get; set; }
