@@ -5,28 +5,64 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+interface Reservation {
+  id: number;
+  firstName: string;
+  lastName: string;
+  startDate: string;
+  endDate: string;
+  deskId: number;
+}
+
+interface Desk {
+  id: number;
+  number: string;
+  status: "Available" | "UnderMaintenance";
+  reservation: Reservation | null;
+}
+
+interface UserReservation {
+  id: number;
+  startDate: string;
+  endDate: string;
+  deskId: number;
+  deskNumber: string;
+}
+
+interface ProfileData {
+  firstName: string;
+  lastName: string;
+  currentReservations: UserReservation[];
+  pastReservations: UserReservation[];
+}
+
+interface User {
+  firstName: string;
+  lastName: string;
+}
+
 function App() {
   // --- STATE MANAGEMENT ---
-  const [desks, setDesks] = useState([]); // Stores desks and their current reservations
-  const [selectedDate, setSelectedDate] = useState(new Date()); // Date selected in the calendar
-  const [user, setUser] = useState({ firstName: "", lastName: "" }); // Current user's info
+  const [desks, setDesks] = useState<Desk[]>([]); // Stores desks and their current reservations
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date()); // Date selected in the calendar
+  const [user, setUser] = useState<User>({ firstName: "", lastName: "" }); // Current user's info
 
   //  States for the Reservation Range Picker
-  const [bookingDeskId, setBookingDeskId] = useState(null); // Tracks which desk is being booked
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
+  const [bookingDeskId, setBookingDeskId] = useState<number | null>(null); // Tracks which desk is being booked
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
 
   //To handle screen is visible: "grid" or "profile"
-  const [view, setView] = useState("grid");
+  const [view, setView] = useState<"grid" | "profile">("grid");
 
   // To store data returned from ProfileController
-  const [profileData, setProfileData] = useState(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
 
 
   // --- API CALLS ---
 
   // Fetch desks and their status for the selected date
-  const loadDesks = async (date) => {
+  const loadDesks = async (date: Date) => {
     try {
       const formattedDate = date.toLocaleDateString('en-CA');
       const response = await axios.get(`http://localhost:5143/api/desks?date=${formattedDate}`);
@@ -37,7 +73,7 @@ function App() {
   };
 
   // Connects to the DELETE method with ReservationController
-  const handleCancel = async (reservationId, onlyToday) => {
+  const handleCancel = async (reservationId: number, onlyToday: boolean) => {
     const message = onlyToday
       ? "Are you sure you want to cancel for today only?"
       : "Are you sure you want to cancel the entire reservation range?";
@@ -56,7 +92,7 @@ function App() {
   };
 
   // Connects to the POST method with ReservationController
-  const handleReserve = async (deskId) => {
+  const handleReserve = async (deskId: number) => {
     if (!user.firstName || !user.lastName) {
       alert("Please enter your first and last name to make a reservation.");
       return;
@@ -73,7 +109,7 @@ function App() {
 
       setBookingDeskId(null); // Close the booking picker
       loadDesks(selectedDate);
-    } catch (error) {
+    } catch (error: any) {
       alert(error.response?.data || "Booking failed");
     }
   };
@@ -160,7 +196,7 @@ function App() {
               <label className="form-label fw-bold d-block">Select View Date:</label>
               <DatePicker
                 selected={selectedDate}
-                onChange={(date) => setSelectedDate(date)}
+                onChange={(date: Date | null) => date && setSelectedDate(date)}
                 dateFormat="yyyy-MM-dd"
                 className="form-control text-center"
               />
@@ -169,7 +205,7 @@ function App() {
 
           {/* --- DESK GRID SECTION --- */}
           <div className="row g-4">
-            {desks.map((desk) => {
+            {desks.map((desk: Desk) => {
               const statusClass = desk.status === "UnderMaintenance" ? 'secondary' : desk.reservation ? 'danger' : 'success';
               const isMine = desk.reservation &&
                 desk.reservation.firstName.toLowerCase() === user.firstName.toLowerCase() &&
@@ -188,11 +224,11 @@ function App() {
                     </div>
 
                     <div className="card-body d-flex flex-column align-items-center justify-content-center py-4">
-                      {isMine ? (
+                      {isMine && desk.reservation ? (
                         <div className="d-grid gap-2 w-100">
                           <small className="fw-bold text-danger text-center">Your Booking</small>
-                          <button onClick={() => handleCancel(desk.reservation.id, true)} className="btn btn-danger btn-sm">Cancel today</button>
-                          <button onClick={() => handleCancel(desk.reservation.id, false)} className="btn btn-outline-danger btn-sm">Cancel all</button>
+                          <button onClick={() => handleCancel(desk.reservation!.id, true)} className="btn btn-danger btn-sm">Cancel today</button>
+                          <button onClick={() => handleCancel(desk.reservation!.id, false)} className="btn btn-outline-danger btn-sm">Cancel all</button>
                         </div>
                       ) : (
                         !desk.reservation && desk.status !== "UnderMaintenance" && (
@@ -201,9 +237,9 @@ function App() {
                               <small className="fw-bold mb-1 d-block">Select Range:</small>
                               <DatePicker
                                 selected={startDate}
-                                onChange={(dates) => {
+                                onChange={(dates: [Date | null, Date | null]) => {
                                   const [start, end] = dates;
-                                  setStartDate(start);
+                                  if (start) setStartDate(start);
                                   setEndDate(end);
                                 }}
                                 startDate={startDate}
@@ -254,11 +290,11 @@ function App() {
               {/* Current/Active Bookings */}
               <div className="col-md-6">
                 <h5 className="text-success border-bottom pb-2">Active Reservations</h5>
-                {profileData?.currentReservations?.length > 0 ? (
+                {profileData?.currentReservations && profileData.currentReservations.length > 0 ? (
                   <div className="list-group">
                     {profileData.currentReservations.map(res => (
                       <div key={res.id} className="list-group-item border-start-0 border-end-0">
-                        <strong>Desk {res.number}</strong>
+                        <strong>Desk {res.deskNumber}</strong>
                         <div className="text-muted small">
                           {new Date(res.startDate).toLocaleDateString()} - {new Date(res.endDate).toLocaleDateString()}
                         </div>
@@ -271,11 +307,11 @@ function App() {
               {/* Past Bookings */}
               <div className="col-md-6 mt-4 mt-md-0">
                 <h5 className="text-secondary border-bottom pb-2">Past History</h5>
-                {profileData?.pastReservations.length > 0 ? (
+                {profileData?.pastReservations && profileData.pastReservations.length > 0 ? (
                   <div className="list-group">
                     {profileData.pastReservations.map(res => (
                       <div key={res.id} className="list-group-item list-group-item-light border-start-0 border-end-0">
-                        <strong>Desk {res.number}</strong>
+                        <strong>Desk {res.deskNumber}</strong>
                         <div className="text-muted small">
                           {new Date(res.startDate).toLocaleDateString()} - {new Date(res.endDate).toLocaleDateString()}
                         </div>
