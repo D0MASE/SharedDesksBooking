@@ -10,15 +10,14 @@ public class DeskService(AppDbContext context, IMapper mapper) : IDeskService
     public async Task<IEnumerable<DeskResponseDto>> GetDesksWithAvailabilityAsync(DateTime date)
     {
         var targetDate = date.Date;
-        var desks = await context.Desks.ToListAsync();
-        var activeReservations = await context.Reservations
-            .Where(r => targetDate >= r.StartDate.Date && targetDate <= r.EndDate.Date)
+        var desks = await context.Desks
+            .Include(d => d.Reservations)
             .ToListAsync();
 
         return desks.Select(d =>
         {
             var dto = mapper.Map<DeskResponseDto>(d);
-            var activeRes = activeReservations.FirstOrDefault(r => r.DeskId == d.Id);
+            var activeRes = d.Reservations.FirstOrDefault(r => targetDate >= r.StartDate.Date && targetDate <= r.EndDate.Date);
             if (activeRes != null)
             {
                 return dto with { Reservation = mapper.Map<ReservationDto>(activeRes) };

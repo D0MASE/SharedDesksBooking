@@ -13,19 +13,17 @@ public class ProfileService(AppDbContext context) : IProfileService
 
         // Gauname visas rezervacijas ir sujungiam su stalo informacija
         var userReservations = await context.Reservations
+            .Include(r => r.Desk)
             .Where(r => r.FirstName.ToLower() == firstName.ToLower() &&
                         r.LastName.ToLower() == lastName.ToLower())
-            .Join(context.Desks,
-                res => res.DeskId,
-                desk => desk.Id,
-                (res, desk) => new UserReservationDto
-                {
-                    Id = res.Id,
-                    StartDate = res.StartDate,
-                    EndDate = res.EndDate,
-                    DeskId = res.DeskId,
-                    DeskNumber = desk.Number
-                })
+            .Select(res => new UserReservationDto
+            {
+                Id = res.Id,
+                StartDate = res.StartDate,
+                EndDate = res.EndDate,
+                DeskId = res.DeskId,
+                DeskNumber = res.Desk.Number
+            })
             .OrderByDescending(r => r.StartDate)
             .ToListAsync();
 

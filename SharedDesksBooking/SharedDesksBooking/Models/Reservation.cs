@@ -14,5 +14,6 @@ public class Reservation
 
 
     public int DeskId { get; set; }
+    public Desk Desk { get; set; } = default!;
 
 }

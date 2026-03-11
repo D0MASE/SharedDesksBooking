@@ -8,4 +8,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<Desk> Desks { get; set; } = default!;
     public DbSet<Reservation> Reservations { get; set; } = default!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Reservation>()
+            .HasOne(r => r.Desk)
+            .WithMany(d => d.Reservations)
+            .HasForeignKey(r => r.DeskId);
+    }
 }
