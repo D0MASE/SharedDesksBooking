@@ -24,6 +24,7 @@ const DesksPage: React.FC<DesksPageProps> = ({ user, onUserChange }) => {
         setEndDate,
         handleCancel,
         handleReserve,
+        loading,
     } = useDesks(new Date(), user);
 
     return (
@@ -44,23 +45,30 @@ const DesksPage: React.FC<DesksPageProps> = ({ user, onUserChange }) => {
                 </div>
             </div>
 
-            <div className="row g-4">
-                {desks.map((desk) => (
-                    <DeskCard
-                        key={desk.id}
-                        desk={desk}
-                        user={user}
-                        bookingDeskId={bookingDeskId}
-                        startDate={startDate}
-                        endDate={endDate}
-                        onCancel={handleCancel}
-                        onReserve={handleReserve}
-                        onSetBookingDeskId={setBookingDeskId}
-                        onSetStartDate={setStartDate}
-                        onSetEndDate={setEndDate}
-                    />
-                ))}
-            </div>
+            {loading ? (
+                <div className="text-center my-5">
+                    <div className="spinner-border text-primary" role="status"></div>
+                    <p className="mt-2 text-muted">Loading desks...</p>
+                </div>
+            ) : (
+                <div className="row g-4">
+                    {desks.map((desk) => (
+                        <DeskCard
+                            key={desk.id}
+                            desk={desk}
+                            user={user}
+                            bookingDeskId={bookingDeskId}
+                            startDate={startDate}
+                            endDate={endDate}
+                            onCancel={handleCancel}
+                            onReserve={handleReserve}
+                            onSetBookingDeskId={setBookingDeskId}
+                            onSetStartDate={setStartDate}
+                            onSetEndDate={setEndDate}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

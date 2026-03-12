@@ -10,6 +10,7 @@ import DesksPage from "./pages/DesksPage";
 import ProfilePage from "./pages/ProfilePage";
 
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { Toaster, toast } from "react-hot-toast";
 
 function App() {
   const [user, setUser] = useState<User>({ firstName: "", lastName: "" });
@@ -19,7 +20,7 @@ function App() {
 
   const fetchProfile = async () => {
     if (!user.firstName || !user.lastName) {
-      alert("Please enter your first and last name to view profile.");
+      toast.error("Please enter your first and last name to view profile.");
       return;
     }
 
@@ -29,7 +30,7 @@ function App() {
       navigate("/profile");
     } catch (error) {
       console.error("Error fetching profile:", error);
-      alert("Failed to fetch profile data.");
+      toast.error("Failed to fetch profile data.");
     }
   };
 
@@ -37,6 +38,7 @@ function App() {
 
   return (
     <div className="container mt-4 pb-5">
+      <Toaster position="top-right" />
       <Navbar
         view={currentView}
         onProfileClick={fetchProfile}

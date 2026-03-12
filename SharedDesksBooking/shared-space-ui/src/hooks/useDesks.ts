@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Desk, User } from "../types";
 import { deskService, reservationService } from "../services/api";
+import { toast } from "react-hot-toast";
 
 export const useDesks = (initialDate: Date, user: User) => {
     const [desks, setDesks] = useState<Desk[]>([]);
@@ -18,6 +19,7 @@ export const useDesks = (initialDate: Date, user: User) => {
             setDesks(data);
         } catch (error) {
             console.error("Error: Could not fetch desks.");
+            toast.error("Could not fetch desks.");
         } finally {
             setLoading(false);
         }
@@ -33,16 +35,17 @@ export const useDesks = (initialDate: Date, user: User) => {
         try {
             const formattedDate = selectedDate.toLocaleDateString("en-CA");
             await reservationService.cancel(reservationId, onlyToday, formattedDate);
+            toast.success("Reservation cancelled.");
             await loadDesks(selectedDate);
         } catch (error) {
             console.error("Error cancelling reservation:", error);
-            alert("Failed to cancel reservation.");
+            toast.error("Failed to cancel reservation.");
         }
     };
 
     const handleReserve = async (deskId: number) => {
         if (!user.firstName || !user.lastName) {
-            alert("Please enter your first and last name to make a reservation.");
+            toast.error("Please enter your first and last name to make a reservation.");
             return;
         }
 
@@ -55,10 +58,11 @@ export const useDesks = (initialDate: Date, user: User) => {
                 endDate: (endDate || startDate).toLocaleDateString("en-CA"),
             });
 
+            toast.success("Desk reserved successfully!");
             setBookingDeskId(null);
             await loadDesks(selectedDate);
         } catch (error: any) {
-            alert(error.response?.data || "Booking failed");
+            toast.error(error.response?.data || "Booking failed");
         }
     };
 
