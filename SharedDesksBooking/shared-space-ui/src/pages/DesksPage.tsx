@@ -1,5 +1,6 @@
 import React from "react";
 import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { User } from "../types";
 import { useDesks } from "../hooks/useDesks";
 import IdentificationSection from "../components/IdentificationSection";

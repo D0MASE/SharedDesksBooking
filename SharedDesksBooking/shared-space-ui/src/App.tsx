@@ -9,10 +9,13 @@ import Navbar from "./components/Navbar";
 import DesksPage from "./pages/DesksPage";
 import ProfilePage from "./pages/ProfilePage";
 
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+
 function App() {
   const [user, setUser] = useState<User>({ firstName: "", lastName: "" });
-  const [view, setView] = useState<"grid" | "profile">("grid");
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const fetchProfile = async () => {
     if (!user.firstName || !user.lastName) {
@@ -23,26 +26,26 @@ function App() {
     try {
       const data = await userService.getProfile(user.firstName, user.lastName);
       setProfileData(data);
-      setView("profile");
+      navigate("/profile");
     } catch (error) {
       console.error("Error fetching profile:", error);
       alert("Failed to fetch profile data.");
     }
   };
 
+  const currentView = location.pathname === "/profile" ? "profile" : "grid";
+
   return (
     <div className="container mt-4 pb-5">
       <Navbar
-        view={view}
-        onViewChange={setView}
+        view={currentView}
         onProfileClick={fetchProfile}
       />
 
-      {view === "grid" ? (
-        <DesksPage user={user} onUserChange={setUser} />
-      ) : (
-        <ProfilePage profileData={profileData} />
-      )}
+      <Routes>
+        <Route path="/" element={<DesksPage user={user} onUserChange={setUser} />} />
+        <Route path="/profile" element={<ProfilePage profileData={profileData} />} />
+      </Routes>
     </div>
   );
 }
